@@ -7,79 +7,65 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
 
+import torch.nn as nn
+import torchvision
+import tqdm
+
 from torch_deform_conv.layers import ConvOffset2D
 from torch_deform_conv.cnn import get_cnn, get_deform_cnn
-from torch_deform_conv.mnist import get_gen
 from torch_deform_conv.utils import transfer_weights
 
-batch_size = 32
-n_train = 60000
-n_test = 10000
-steps_per_epoch = int(np.ceil(n_train / batch_size))
-validation_steps = int(np.ceil(n_test / batch_size))
 
-train_gen = get_gen(
-    'train', batch_size=batch_size,
-    scale=(1.0, 1.0), translate=0.0,
-    shuffle=True
-)
-test_gen = get_gen(
-    'test', batch_size=batch_size,
-    scale=(1.0, 1.0), translate=0.0,
-    shuffle=False
-)
-train_scaled_gen = get_gen(
-    'train', batch_size=batch_size,
-    scale=(1.0, 2.5), translate=0.2,
-    shuffle=True
-)
-test_scaled_gen = get_gen(
-    'test', batch_size=batch_size,
-    scale=(1.0, 2.5), translate=0.2,
-    shuffle=False
-)
+batch_size_train = 32
+batch_size_test = 100
+transform=torchvision.transforms.Compose([torchvision.transforms.ToTensor(),\
+                                          torchvision.transforms.Normalize((0.1307,), (0.3081,))])
+dataset = torchvision.datasets.MNIST('MNIST/', train=True, download=True,transform=transform)
+train_loader = torch.utils.data.DataLoader(dataset,batch_size=batch_size_train, shuffle=True)
 
+test_data = torchvision.datasets.MNIST('MNIST/', train=False, download=True,transform=transform)
+test_loader = torch.utils.data.DataLoader(test_data ,batch_size=batch_size_test, shuffle=True)
 
-def train(model, generator, batch_num, epoch):
+transform=torchvision.transforms.Compose([torchvision.transforms.RandomRotation(180),\
+                                          torchvision.transforms.ToTensor(),\
+                                          torchvision.transforms.Normalize((0.1307,), (0.3081,))])
+test_data_rot = torchvision.datasets.MNIST('MNIST/', train=False, download=True,transform=transform)
+test_loader_rot = torch.utils.data.DataLoader(test_data_rot ,batch_size=batch_size_test, shuffle=True)
+
+def train(model, data_loader, epoch):
     model.train()
-    for batch_idx in range(batch_num):
-        data, target = next(generator)
-        data, target = torch.from_numpy(data), torch.from_numpy(target)
-        # convert BHWC to BCHW
-        data = data.permute(0, 3, 1, 2)
-        data, target = data.float().cuda(), target.long().cuda()
+    loss_cum = []
+    Acc = 0
+    for batch_idx, (data,target) in tqdm.tqdm(enumerate(data_loader), total=len(data_loader), desc="[TRAIN] Epoch: {}".format(epoch)):
+        data = data.float().cuda(); data = Variable(data)
+        target = target.cuda(); target = Variable(target)
 
-        data, target = Variable(data), Variable(target)
-        optimizer.zero_grad()
         output = model(data)
+        optimizer.zero_grad()
         loss = F.cross_entropy(output, target)
         loss.backward()
         optimizer.step()
+        loss_cum.append(loss.data.cpu()[0])
+        _, arg_max_out = torch.max(output.data.cpu(), 1)
+        Acc += arg_max_out.long().eq(target.data.cpu().long()).sum()
+    print("Loss: %0.3f | Acc: %0.2f"%(np.array(loss_cum).mean(), float(Acc*100)/len(data_loader.dataset)))
 
-    print('Train Epoch: {}\tLoss: {:.6f}'.format(epoch, loss.data[0]))
-
-def test(model, generator, batch_num, epoch):
+def test(model, data_loader, epoch):
     model.eval()
-    test_loss = 0
-    correct = 0
-    for batch_idx in range(batch_num):
-        data, target = next(generator)
-        data, target = torch.from_numpy(data), torch.from_numpy(target)
-        # convert BHWC to BCHW
-        data = data.permute(0, 3, 1, 2)
-        data, target = data.float().cuda(), target.long().cuda()
-
-        data, target = Variable(data), Variable(target)
+    loss_cum = []
+    Acc = 0
+    for batch_idx, (data,target) in tqdm.tqdm(enumerate(data_loader), total=len(data_loader), desc="[TEST] Epoch: {}".format(epoch)):
+        data = data.cuda(); data = Variable(data, volatile=True)
+        target = target.cuda(); target = Variable(target, volatile=True)
         output = model(data)
-        test_loss += F.cross_entropy(output, target).data[0]
-        pred = output.data.max(1)[1] # get the index of the max log-probability
-        correct += pred.eq(target.data).cpu().sum()
-
-    test_loss /=  batch_num# loss function already averages over batch size
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
-        test_loss, correct, n_test, 100. * correct / n_test))
-
-
+        loss = F.cross_entropy(output, target)   
+        loss_cum.append(loss.data.cpu()[0])
+        _, arg_max_out = torch.max(output.data.cpu(), 1)
+        Acc += arg_max_out.long().eq(target.data.cpu().long()).sum()
+    Acc = float(Acc*100)/len(data_loader.dataset)
+    lossi = np.array(loss_cum).mean()
+    print("Loss Test: %0.3f | Acc Test: %0.2f"%(np.array(loss_cum).mean(), Acc))
+    return Acc, lossi
 # ---
 # Normal CNN
 
@@ -88,8 +74,8 @@ model = get_cnn()
 model = model.cuda()
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
 for epoch in range(10):
-    test(model, test_gen, validation_steps, epoch)
-    train(model, train_gen, steps_per_epoch, epoch)
+    test(model, test_loader, epoch)
+    train(model, train_loader, epoch)
 
 
 torch.save(model, 'models/cnn.th')
@@ -100,23 +86,22 @@ torch.save(model, 'models/cnn.th')
 print('Evaluate normal CNN')
 model_cnn = torch.load('models/cnn.th')
 
-test(model_cnn, test_gen, validation_steps, epoch)
+test(model_cnn, test_loader, epoch)
 # 99.27%
-test(model_cnn, test_scaled_gen, validation_steps, epoch)
+test(model_cnn, test_loader_rot, epoch)
 # 58.83%
 
 # ---
 # Deformable CNN
 
 print('Finetune deformable CNN (ConvOffset2D and BatchNorm)')
-model = get_deform_cnn(trainable=False)
+model = get_deform_cnn(trainable=True)
 model = model.cuda()
-transfer_weights(model_cnn, model)
+#transfer_weights(model_cnn, model)
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
-for epoch in range(20):
-    test(model, test_scaled_gen, validation_steps, epoch)
-    train(model, train_scaled_gen, steps_per_epoch, epoch)
-
+for epoch in range(10):
+    test(model, test_loader, epoch)
+    train(model, train_loader, epoch)
 
 torch.save(model, 'models/deform_cnn.th')
 
@@ -126,7 +111,5 @@ torch.save(model, 'models/deform_cnn.th')
 print('Evaluate deformable CNN')
 model = torch.load('models/deform_cnn.th')
 
-test(model, test_gen, validation_steps, epoch)
-# xx%
-test(model, test_scaled_gen, validation_steps, epoch)
-# xx%
+test(model, test_loader, epoch)
+test(model, test_loader_rot, epoch)
