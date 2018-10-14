@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import torch
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 def coord_grid(h, w):
     x_coord = [list(range(w))]*h
@@ -12,13 +12,7 @@ def coord_grid(h, w):
 
     
 def get_conv_points(x, y, layer_info):
-#    k = layer_info[1]; k = [k]*2 if isinstance(k, int) else k
-#    s = layer_info[2]; s = [s]*2 if isinstance(s, int) else s
-#    p = layer_info[3]; p = [p]*2 if isinstance(p, int) else p
-#    d = layer_info[4]; d = [d]*2 if isinstance(d, int) else d
-#    h = layer_info[5][-2]
-#    w = layer_info[5][-1]
-    
+
     k = layer_info[1].kernel_size; k = [k]*2 if isinstance(k, int) else k
     s = layer_info[1].stride; s = [s]*2 if isinstance(s, int) else s
     p = layer_info[1].padding; p = [p]*2 if isinstance(p, int) else p
@@ -62,7 +56,6 @@ def get_points(forward_pass):
     
     Valid layer types are:
         'offset' - (type, offset_map)
-#        'conv' - (type, kernel_size, stride, padding, dilation, input_shape)
         'conv' - (type, layer, input_shape)
         'pool' - (type, indices,  input_shape)
     """
@@ -105,10 +98,10 @@ def get_points(forward_pass):
                 y_points = y_coord.view(-1).tolist()
                 
             
-            plt.close('all')
-            plt.scatter(x_points, y_points)
-            plt.title('Offset')
-            plt.pause(1)
+#            plt.close('all')
+#            plt.scatter(x_points, y_points)
+#            plt.title('Offset')
+#            plt.pause(1)
             
         elif t[0] == 'conv':
             print('conv')
@@ -130,10 +123,10 @@ def get_points(forward_pass):
             x_points = temp_x
             y_points = temp_y
             
-            plt.close('all')
-            plt.scatter(x_points, y_points)
-            plt.title('Conv')
-            plt.pause(1)
+#            plt.close('all')
+#            plt.scatter(x_points, y_points)
+#            plt.title('Conv')
+#            plt.pause(1)
             
         elif t[0] == 'pool':
             print('pool')
@@ -169,10 +162,10 @@ def get_points(forward_pass):
             x_points = x_buffer
             y_points = y_buffer
                 
-            plt.close('all')
-            plt.scatter(x_points, y_points)
-            plt.title('Pooling')
-            plt.pause(1)
+#            plt.close('all')
+#            plt.scatter(x_points, y_points)
+#            plt.title('Pooling')
+#            plt.pause(1)
             
         else:
             raise Exception('"'+t[0]+'" is not valid layer type')
