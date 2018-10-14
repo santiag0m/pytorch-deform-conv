@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Oct 13 17:04:10 2018
-
-@author: Santiago
-"""
 
 import torch.nn as nn
 from torch_deform_conv.layers import ConvOffset2D

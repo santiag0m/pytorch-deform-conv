@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Oct 13 12:21:03 2018
-
-@author: Santiago
-"""
 
 import torch
 import matplotlib.pyplot as plt
