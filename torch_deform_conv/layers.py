@@ -16,7 +16,7 @@ class ConvOffset2D(nn.Conv2d):
     Note that this layer does not perform convolution on the deformed feature
     map. See get_deform_cnn in cnn.py for usage
     """
-    def __init__(self, filters, init_normal_stddev=0.01, **kwargs):
+    def __init__(self, filters, init_normal_stddev=0.01, return_offsets=False, **kwargs):
         """Init
 
         Parameters
@@ -29,6 +29,7 @@ class ConvOffset2D(nn.Conv2d):
             Pass to superclass. See Con2d layer in pytorch
         """
         self.filters = filters
+        self.return_offsets = return_offsets
         self._grid_param = None
         super(ConvOffset2D, self).__init__(self.filters, self.filters*2, 3, padding=1, bias=False, **kwargs)
         self.weight.data.copy_(self._init_weights(self.weight, init_normal_stddev))
@@ -49,7 +50,9 @@ class ConvOffset2D(nn.Conv2d):
 
         # x_offset: (b, h, w, c)
         x_offset = self._to_b_c_h_w(x_offset, x_shape)
-
+        
+        if self.return_offsets:
+            return x_offset, offsets
         return x_offset
 
     @staticmethod
