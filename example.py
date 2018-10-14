@@ -11,10 +11,10 @@ from torch_deform_conv.layers import ConvOffset2D
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1,5,3)
+        self.conv1 = nn.Conv2d(1,1,3)
         self.pool = nn.MaxPool2d(2,2,return_indices=True)
-        self.defconv = ConvOffset2D(5, return_offsets=True)
-        self.conv2 = nn.Conv2d(5,1,3)
+        self.defconv = ConvOffset2D(1, return_offsets=True)
+        self.conv2 = nn.Conv2d(1,1,3)
         
     def forward(self, x):
         # Initialize
