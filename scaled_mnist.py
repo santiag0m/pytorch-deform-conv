@@ -40,7 +40,7 @@ def train(model, data_loader, epoch):
         data = data.float().cuda(); data = Variable(data)
         target = target.cuda(); target = Variable(target)
 
-        output = model(data)
+        output, forwa = model(data)
         optimizer.zero_grad()
         loss = F.cross_entropy(output, target)
         loss.backward()
@@ -57,7 +57,7 @@ def test(model, data_loader, epoch):
     for batch_idx, (data,target) in tqdm.tqdm(enumerate(data_loader), total=len(data_loader), desc="[TEST] Epoch: {}".format(epoch)):
         data = data.cuda(); data = Variable(data, volatile=True)
         target = target.cuda(); target = Variable(target, volatile=True)
-        output = model(data)
+        output, forwa = model(data)
         loss = F.cross_entropy(output, target)   
         loss_cum.append(loss.data.cpu()[0])
         _, arg_max_out = torch.max(output.data.cpu(), 1)
@@ -70,32 +70,32 @@ def test(model, data_loader, epoch):
 # Normal CNN
 
 
-model = get_cnn()
-model = model.cuda()
-optimizer = optim.Adam(model.parameters(), lr=1e-3)
-for epoch in range(10):
-    test(model, test_loader, epoch)
-    train(model, train_loader, epoch)
-
-
-torch.save(model, 'models/cnn.th')
-
-# ---
-# Evaluate normal CNN
-
-print('Evaluate normal CNN')
-model_cnn = torch.load('models/cnn.th')
-
-test(model_cnn, test_loader, epoch)
-# 99.27%
-test(model_cnn, test_loader_rot, epoch)
-# 58.83%
-
-# ---
+#model = get_cnn()
+#model = model.cuda()
+#optimizer = optim.Adam(model.parameters(), lr=1e-3)
+#for epoch in range(10):
+#    test(model, test_loader, epoch)
+#    train(model, train_loader, epoch)
+#
+#
+#torch.save(model, 'models/cnn.th')
+#
+## ---
+## Evaluate normal CNN
+#
+#print('Evaluate normal CNN')
+#model_cnn = torch.load('models/cnn.th')
+#
+#test(model_cnn, test_loader, epoch)
+## 99.27%
+#test(model_cnn, test_loader_rot, epoch)
+## 58.83%
+#
+## ---
 # Deformable CNN
 
 print('Finetune deformable CNN (ConvOffset2D and BatchNorm)')
-model = get_deform_cnn(trainable=True)
+model = get_deform_cnn(trainable=False)
 model = model.cuda()
 #transfer_weights(model_cnn, model)
 optimizer = optim.Adam(model.parameters(), lr=1e-3)

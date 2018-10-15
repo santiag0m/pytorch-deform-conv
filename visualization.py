@@ -170,6 +170,3 @@ def get_points(forward_pass):
         else:
             raise Exception('"'+t[0]+'" is not valid layer type')
     return x_points, y_points
-                    
-                
-                
