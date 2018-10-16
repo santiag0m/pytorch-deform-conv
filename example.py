@@ -11,10 +11,10 @@ class Net(nn.Module):
         self.defconv = ConvOffset2D(1, return_offsets=True)
         self.conv2 = nn.Conv2d(1,1,3)
         
-    def forward(self, x, getForwardInfo = False):
-        if getForwardInfo:
-            # Initialize
-            forward_info = []
+    def forward(self, x):
+        
+        # Initialize
+        forward_info = []
             
         # First Conv layer
         shape = x.shape
@@ -47,5 +47,5 @@ if __name__ == '__main__':
     from visualization import get_points
     x = torch.randn(1,1,52,52)
     model = Net()
-    y, forward_info = model(x,False)
+    y, forward_info = model(x)
     x_points, y_points = get_points(forward_info)

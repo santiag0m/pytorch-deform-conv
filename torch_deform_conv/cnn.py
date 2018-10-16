@@ -55,17 +55,17 @@ class DeformConvNet(nn.Module):
         self.bn11 = nn.BatchNorm2d(32)
 
         # conv12
-        self.offset12 = ConvOffset2D(32)
+        self.offset12 = ConvOffset2D(32, return_offsets=True)
         self.conv12 = nn.Conv2d(32, 64, 3, padding=1, stride=2)
         self.bn12 = nn.BatchNorm2d(64)
 
         # conv21
-        self.offset21 = ConvOffset2D(64)
+        self.offset21 = ConvOffset2D(64, return_offsets=True)
         self.conv21 = nn.Conv2d(64, 128, 3, padding= 1)
         self.bn21 = nn.BatchNorm2d(128)
 
         # conv22
-        self.offset22 = ConvOffset2D(128)
+        self.offset22 = ConvOffset2D(128, return_offsets=True)
         self.conv22 = nn.Conv2d(128, 128, 3, padding=1, stride=2)
         self.bn22 = nn.BatchNorm2d(128)
 
