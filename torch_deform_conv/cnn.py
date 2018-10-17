@@ -55,17 +55,17 @@ class DeformConvNet(nn.Module):
         self.bn11 = nn.BatchNorm2d(32)
 
         # conv12
-        self.offset12 = ConvOffset2D(32, return_offsets=True)
+        self.offset12 = ConvOffset2D(32)
         self.conv12 = nn.Conv2d(32, 64, 3, padding=1, stride=2)
         self.bn12 = nn.BatchNorm2d(64)
 
         # conv21
-        self.offset21 = ConvOffset2D(64, return_offsets=True)
+        self.offset21 = ConvOffset2D(64)
         self.conv21 = nn.Conv2d(64, 128, 3, padding= 1)
         self.bn21 = nn.BatchNorm2d(128)
 
         # conv22
-        self.offset22 = ConvOffset2D(128, return_offsets=True)
+        self.offset22 = ConvOffset2D(128)
         self.conv22 = nn.Conv2d(128, 128, 3, padding=1, stride=2)
         self.bn22 = nn.BatchNorm2d(128)
 
@@ -74,52 +74,26 @@ class DeformConvNet(nn.Module):
 
     def forward(self, x):
         
-        forward_info = []
-        
-        shape = x.shape
         x = F.relu(self.conv11(x))
         x = self.bn11(x)
-        if self.getForwardInfo:
-            conv1_layer = ('conv', self.conv11, shape)
-            forward_info.append(conv1_layer)
         
-        shape = x.shape
-        x, offsets = self.offset12(x)
-        if self.getForwardInfo:
-            offset1_layer = ('offset', offsets)
-            forward_info.append(offset1_layer)
-        
-        shape = x.shape
+        x = self.offset12(x)
         x = F.relu(self.conv12(x))
         x = self.bn12(x)
-        if self.getForwardInfo:
-            conv2_layer = ('conv', self.conv12, shape)
-            forward_info.append(conv2_layer)
         
-        shape = x.shape
-        x, offsets = self.offset21(x)
-        if self.getForwardInfo:
-            offset2_layer = ('offset', offsets)
-            forward_info.append(offset2_layer)
-        
-        shape = x.shape
+        x = self.offset21(x)
         x = F.relu(self.conv21(x))
         x = self.bn21(x)
-        if self.getForwardInfo:
-            conv3_layer = ('conv', self.conv21, shape)
-            forward_info.append(conv3_layer)
         
-        shape = x.shape
-        x, offsets = self.offset22(x)
-        if self.getForwardInfo:
-            offset3_layer = ('offset', offsets)
-            forward_info.append(offset3_layer)
+        x = self.offset22(x)
+        x = F.relu(self.conv22(x))
+        x = self.bn22(x)
         
         x = F.avg_pool2d(x, kernel_size=[x.size(2), x.size(3)])
         x = self.fc(x.view(x.size()[:2]))
         x = F.softmax(x)
         
-        return x, forward_info
+        return x
 
     def freeze(self, module_classes):
         '''
